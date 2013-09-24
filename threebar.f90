@@ -52,8 +52,8 @@
 !     This could be used to pass double precision and integer arrays untouched
 !     to the evaluation subroutines EVAL_*
 !
-      double precision DAT(10)
-      integer IDAT(10)
+      double precision DAT(20)
+      integer IDAT(20)
 !
 !     Place for storing the Ipopt Problem Handle
 !
@@ -88,11 +88,38 @@
 
       pi=4.0*atan(1.0) ! constant for later use (visible globally)
       
+      !Problem data and other constants
       dat(1)=10.0 !length
       dat(2)=1.0e7 !E
       dat(3)=0.1 !gamma
       dat(4)=90.0*pi/180.0
       dat(5)=30000.0
+
+      !!! Max constraint values
+      !Tensile
+      dat(6)=5000.0
+      dat(7)=20000.0
+      dat(8)=5000.0
+      !Compressive
+      dat(9)=5000.0
+      dat(10)=20000.0
+      dat(11)=5000.0
+      !Displacement
+      dat(12)=0.005
+      dat(13)=0.005
+
+!!$      tensile_sigma1_max=dat(6)      
+!!$      tensile_sigma2_max=dat(7)
+!!$      tensile_sigma3_max=dat(8)
+!!$
+!!$      comp_sigma1_max=dat(9)      
+!!$      comp_sigma2_max=dat(10)
+!!$      comp_sigma3_max=dat(11)
+!!$
+!!$      max_u_disp=dat(12)
+!!$      max_v_disp=dat(13)
+!!$      
+
 
 
       do i=1,N
@@ -274,12 +301,32 @@
 
       real*8::u,v,sigma(3),theta,pu,pv,L,E,P
 
+      real*8::tensile_sigma1_max,tensile_sigma2_max,tensile_sigma3_max
+
+      real*8::comp_sigma1_max,comp_sigma2_max,comp_sigma3_max
+
+      real*8::max_u_disp,max_v_disp
+
+      
+
       !pi=4.0*atan(1.0) ! constant for later use (visible globally)
       
       P=dat(5)
       theta=dat(4)
       L=dat(1)
       E=dat(2)
+
+      tensile_sigma1_max=dat(6)      
+      tensile_sigma2_max=dat(7)
+      tensile_sigma3_max=dat(8)
+
+      comp_sigma1_max=dat(9)      
+      comp_sigma2_max=dat(10)
+      comp_sigma3_max=dat(11)
+
+      max_u_disp=dat(12)
+      max_v_disp=dat(13)
+      
 
       pu=P*cos(theta)
       pv=P*sin(theta)
@@ -305,19 +352,19 @@
 
       ! stress constraints (normalized)
 
-      G(1) = (sigma(1) - 5000.0)/5000.0
-      G(4) = (-1.0*sigma(1)/5000) -1.0
+      G(1) = (sigma(1) - tensile_sigma1_max)/tensile_sigma1_max    !tensile 1
+      G(4) = (-1.0*sigma(1)/comp_sigma1_max) -1.0     !compressive 1
 
-      G(2) = (sigma(2) - 20000.0)/20000.0
-      G(5) = (-1.0*sigma(2)/20000.0) -1.0
+      G(2) = (sigma(2) - tensile_sigma2_max)/tensile_sigma2_max   !tensile 2
+      G(5) = (-1.0*sigma(2)/comp_sigma2_max) -1.0  !compressive 2
 
-      G(3) = (sigma(3) - 5000.0)/5000.0
-      G(6) = (-1.0*sigma(3) / 5000.0) -1.0
+      G(3) = (sigma(3) - tensile_sigma3_max)/tensile_sigma3_max    ! tensile 3
+      G(6) = (-1.0*sigma(3) / comp_sigma3_max) -1.0 !compressive 3
 
       ! displacement constraints (normalized)
 
-      G(7) = (-1.0*u -0.005)/0.005
-      G(8) = (v -0.005)/0.005
+      G(7) = (-1.0*u -max_u_disp)/max_u_disp
+      G(8) = (v -max_v_disp)/max_v_disp
       print*,''
       write(*,'(4x,a)') '>>Normalized Constraint Values:'
       do i=1,8
@@ -335,8 +382,8 @@
 !
 ! =============================================================================
 !
-      subroutine EV_JAC_G(TASK, N, X, NEW_X, M, NZ, ACON, AVAR, A,IDAT, DAT, IERR)
-        implicit none
+    subroutine EV_JAC_G(TASK, N, X, NEW_X, M, NZ, ACON, AVAR, A,IDAT, DAT, IERR)
+      implicit none
       integer TASK, N, NEW_X, M, NZ
       double precision X(N), A(NZ)
       integer ACON(NZ), AVAR(NZ), I
@@ -346,12 +393,31 @@
 
       real*8::u,v,sigma(3),theta,pu,pv,L,E,P,pi
 
+
+      real*8::tensile_sigma1_max,tensile_sigma2_max,tensile_sigma3_max
+
+      real*8::comp_sigma1_max,comp_sigma2_max,comp_sigma3_max
+
+      real*8::max_u_disp,max_v_disp
+
+
       pi=4.0*atan(1.0) ! constant for later use (visible globally)
-      
+
       P=dat(5)
       theta=dat(4)
       L=dat(1)
       E=dat(2)
+
+      tensile_sigma1_max=dat(6)      
+      tensile_sigma2_max=dat(7)
+      tensile_sigma3_max=dat(8)
+
+      comp_sigma1_max=dat(9)      
+      comp_sigma2_max=dat(10)
+      comp_sigma3_max=dat(11)
+
+      max_u_disp=dat(12)
+      max_v_disp=dat(13)
 
       pu=P*cos(theta)
       pv=P*sin(theta)
@@ -364,10 +430,10 @@
 
          ACON(1) = 1
          AVAR(1) = 1
-         
+
          ACON(2) = 1
          AVAR(2) = 2
-         
+
          ACON(3) = 1
          AVAR(3) = 3
 
@@ -375,10 +441,10 @@
 
          ACON(4) = 2
          AVAR(4) = 1
-         
+
          ACON(5) = 2
          AVAR(5) = 2
-         
+
          ACON(6) = 2
          AVAR(6) = 3
 
@@ -386,10 +452,10 @@
 
          ACON(7) = 3
          AVAR(7) = 1
-         
+
          ACON(8) = 3
          AVAR(8) = 2
-         
+
          ACON(9) = 3
          AVAR(9) = 3
 
@@ -397,10 +463,10 @@
 
          ACON(10) = 4
          AVAR(10) = 1
-         
+
          ACON(11) = 4
          AVAR(11) = 2
-         
+
          ACON(12) = 4
          AVAR(12) = 3
 
@@ -408,10 +474,10 @@
 
          ACON(13) = 5
          AVAR(13) = 1
-         
+
          ACON(14) = 5
          AVAR(14) = 2
-         
+
          ACON(15) = 5
          AVAR(15) = 3
 
@@ -419,10 +485,10 @@
 
          ACON(16) = 6
          AVAR(16) = 1
-         
+
          ACON(17) = 6
          AVAR(17) = 2
-         
+
          ACON(18) = 6
          AVAR(18) = 3
 
@@ -430,19 +496,19 @@
 
          ACON(19) = 7
          AVAR(19) = 1
-         
+
          ACON(20) = 7
          AVAR(20) = 2
-         
+
          ACON(21) = 7
          AVAR(21) = 3
 
          ACON(22) = 8
          AVAR(22) = 1
-         
+
          ACON(23) = 8
          AVAR(23) = 2
-         
+
          ACON(24) = 8
          AVAR(24) = 3
 
@@ -450,58 +516,71 @@
 
          !---- GRADIENT OF CONSTRAINTS
 
-        
+
          cgrad(:,:)=0.0
 
-         cgrad(1,1)=((x(2) + 2.0**(1.0/2.0)*x(3))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         ! Tensile Stress 1
 
-         cgrad(1,2)=((x(1) + x(3))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (2.0**(1.0/2.0)*pu)/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
+         cgrad(1,1)=((x(2) + 2.0**(1.0/2.0)*x(3))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(tensile_sigma1_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(1,3)=((x(2) + 2.0**(1.0/2.0)*x(1))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (pu + pv)/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))    
+         cgrad(1,2)=((x(1) + x(3))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(tensile_sigma1_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (2.0**(1.0/2.0)*pu)/(tensile_sigma1_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
 
-         cgrad(2,1)=((pu*(x(1) - x(3)) - pv*(x(1) + x(3)))*(x(2) + 2.0**(1.0/2.0)*x(3)))/(20000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (pu - pv)/(20000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
+         cgrad(1,3)=((x(2) + 2.0**(1.0/2.0)*x(1))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(tensile_sigma1_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (pu + pv)/(tensile_sigma1_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))    
 
-         cgrad(2,2)=((x(1) + x(3))*(pu*(x(1) - x(3)) - pv*(x(1) + x(3))))/(20000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         ! Tensile Stress on 2          
 
-         cgrad(2,3)=(pu + pv)/(20000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) + ((pu*(x(1) - x(3)) - pv*(x(1) + x(3)))*(x(2) + 2.0**(1.0/2.0)*x(1)))/(20000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         cgrad(2,1)=((pu*(x(1) - x(3)) - pv*(x(1) + x(3)))*(x(2) + 2.0**(1.0/2.0)*x(3)))/(tensile_sigma2_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (pu - pv)/(tensile_sigma2_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
 
-         cgrad(3,1)=((x(2) + 2.0**(1.0/2.0)*x(3))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (pu - pv)/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
+         cgrad(2,2)=((x(1) + x(3))*(pu*(x(1) - x(3)) - pv*(x(1) + x(3))))/(tensile_sigma2_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(3,2)=((x(1) + x(3))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (2.0**(1.0/2.0)*pu)/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
+         cgrad(2,3)=(pu + pv)/(tensile_sigma2_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) + ((pu*(x(1) - x(3)) - pv*(x(1) + x(3)))*(x(2) + 2.0**(1.0/2.0)*x(1)))/(tensile_sigma2_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(3,3)=((x(2) + 2.0**(1.0/2.0)*x(1))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         ! Tensile Stress on 3          
 
-         cgrad(4,1)=-((x(2) + 2.0**(1.0/2.0)*x(3))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         cgrad(3,1)=((x(2) + 2.0**(1.0/2.0)*x(3))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(tensile_sigma3_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (pu - pv)/(tensile_sigma3_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
 
-         cgrad(4,2)=(2.0**(1.0/2.0)*pu)/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((x(1) + x(3))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         cgrad(3,2)=((x(1) + x(3))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(tensile_sigma3_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (2.0**(1.0/2.0)*pu)/(tensile_sigma3_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
 
-         cgrad(4,3)=(pu + pv)/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((x(2) + 2.0**(1.0/2.0)*x(1))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         cgrad(3,3)=((x(2) + 2.0**(1.0/2.0)*x(1))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(tensile_sigma3_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(5,1)=(pu - pv)/(20000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((pu*(x(1) - x(3)) - pv*(x(1) + x(3)))*(x(2) + 2.0**(1.0/2.0)*x(3)))/(20000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         ! Compressive Stress on 1 
 
-         cgrad(5,2)=-((x(1) + x(3))*(pu*(x(1) - x(3)) - pv*(x(1) + x(3))))/(20000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         cgrad(4,1)=-((x(2) + 2.0**(1.0/2.0)*x(3))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(comp_sigma1_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(5,3)=- (pu + pv)/(20000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((pu*(x(1) - x(3)) - pv*(x(1) + x(3)))*(x(2) + 2.0**(1.0/2.0)*x(1)))/(20000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         cgrad(4,2)=(2.0**(1.0/2.0)*pu)/(comp_sigma1_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((x(1) + x(3))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(comp_sigma1_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         ! Stress constraint 3 
-         cgrad(6,1)=(pu - pv)/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((x(2) + 2.0**(1.0/2.0)*x(3))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         cgrad(4,3)=(pu + pv)/(comp_sigma1_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((x(2) + 2.0**(1.0/2.0)*x(1))*(x(3)*pu + x(3)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(comp_sigma1_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(6,2)=(2.0**(1.0/2.0)*pu)/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((x(1) + x(3))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         ! Compressive Stress on 2 
 
-         cgrad(6,3)=-((x(2) + 2.0**(1.0/2.0)*x(1))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(5000.0*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         cgrad(5,1)=(pu - pv)/(comp_sigma2_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((pu*(x(1) - x(3)) - pv*(x(1) + x(3)))*(x(2) + 2.0**(1.0/2.0)*x(3)))/(comp_sigma2_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         !% Displacement
-         cgrad(7,1) = (200.0*L*(x(2) + 2.0**(1.0/2.0)*x(3))*(x(1)*pu + x(3)*pu - x(1)*pv + x(3)*pv + 2.0*2.0**(1.0/2.0)*x(2)*pu))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (200.0*L*(pu - pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
+         cgrad(5,2)=-((x(1) + x(3))*(pu*(x(1) - x(3)) - pv*(x(1) + x(3))))/(comp_sigma2_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(7,2) = (200.0*L*(x(1) + x(3))*(x(1)*pu + x(3)*pu - x(1)*pv + x(3)*pv + 2.0*2.0**(1.0/2.0)*x(2)*pu))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (400.0*2.0**(1.0/2.0)*L*pu)/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
+         cgrad(5,3)=- (pu + pv)/(comp_sigma2_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((pu*(x(1) - x(3)) - pv*(x(1) + x(3)))*(x(2) + 2.0**(1.0/2.0)*x(1)))/(comp_sigma2_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(7,3) = (200.0*L*(x(2) + 2.0**(1.0/2.0)*x(1))*(x(1)*pu + x(3)*pu - x(1)*pv + x(3)*pv + 2.0*2.0**(1.0/2.0)*x(2)*pu))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (200.0*L*(pu + pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
+         ! Compressive Stress on 3 
+         cgrad(6,1)=(pu - pv)/(comp_sigma3_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((x(2) + 2.0**(1.0/2.0)*x(3))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(comp_sigma3_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(8,1)= -(200.0*L*(pu - pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - (200.0*L*(x(2) + 2.0**(1.0/2.0)*x(3))*(x(3)*pu - x(1)*pu + x(1)*pv + x(3)*pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         cgrad(6,2)=(2.0**(1.0/2.0)*pu)/(comp_sigma3_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((x(1) + x(3))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(comp_sigma3_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(8,2)= -(200.0*L*(x(1) + x(3))*(x(3)*pu - x(1)*pu + x(1)*pv + x(3)*pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         cgrad(6,3)=-((x(2) + 2.0**(1.0/2.0)*x(1))*(x(1)*pu - x(1)*pv + 2.0**(1.0/2.0)*x(2)*pu))/(comp_sigma3_max*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
-         cgrad(8,3)= (200.0*L*(pu + pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - (200.0*L*(x(2) + 2.0**(1.0/2.0)*x(1))*(x(3)*pu - x(1)*pu + x(1)*pv + x(3)*pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+         !X-Displacement
+         cgrad(7,1) = ((1.0/max_u_disp)*L*(x(2) + 2.0**(1.0/2.0)*x(3))*(x(1)*pu + x(3)*pu - x(1)*pv + x(3)*pv + 2.0*2.0**(1.0/2.0)*x(2)*pu))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - ((1.0/max_u_disp)*L*(pu - pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
+
+         cgrad(7,2) = ((1.0/max_u_disp)*L*(x(1) + x(3))*(x(1)*pu + x(3)*pu - x(1)*pv + x(3)*pv + 2.0*2.0**(1.0/2.0)*x(2)*pu))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - (400.0*2.0**(1.0/2.0)*L*pu)/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
+
+         cgrad(7,3) = ((1.0/max_u_disp)*L*(x(2) + 2.0**(1.0/2.0)*x(1))*(x(1)*pu + x(3)*pu - x(1)*pv + x(3)*pv + 2.0*2.0**(1.0/2.0)*x(2)*pu))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2) - ((1.0/max_u_disp)*L*(pu + pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3)))
+
+
+         ! Y-displacement
+
+         cgrad(8,1)= -((1.0/max_v_disp)*L*(pu - pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((1.0/max_v_disp)*L*(x(2) + 2.0**(1.0/2.0)*x(3))*(x(3)*pu - x(1)*pu + x(1)*pv + x(3)*pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+
+         cgrad(8,2)= -((1.0/max_v_disp)*L*(x(1) + x(3))*(x(3)*pu - x(1)*pu + x(1)*pv + x(3)*pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
+
+         cgrad(8,3)= ((1.0/max_v_disp)*L*(pu + pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))) - ((1.0/max_v_disp)*L*(x(2) + 2.0**(1.0/2.0)*x(1))*(x(3)*pu - x(1)*pu + x(1)*pv + x(3)*pv))/(E*(x(1)*x(2) + x(2)*x(3) + 2.0**(1.0/2.0)*x(1)*x(3))**2)
 
 
 
