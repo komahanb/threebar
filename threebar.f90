@@ -1,26 +1,16 @@
-! Copyright (C) 2002, 2010 Carnegie Mellon University and others.
-! All Rights Reserved.
-! This code is published under the Eclipse Public License.
-!
-!    $Id: hs071_f.f.in 1861 2010-12-21 21:34:47Z andreasw $
-!
-! =============================================================================
-!
-!
-!  This file contains routines to define a small Rosenbrock test problem.
-!
-!  f=0 at the optimal solution for x_i=1 for all i!
-!
-! =============================================================================
-!
-!
 ! =============================================================================
 !
 !                            Main driver program
 !
 ! =============================================================================
-!
-      program example
+
+
+! Three Bar Truss Optimization
+! Author : Komahan Boopathy, University of Dayton, OH 24/9/2013
+! Thanks to IPOPT
+
+
+program Threebar
 !
       implicit none
 !
@@ -92,21 +82,23 @@
       dat(1)=10.0 !length
       dat(2)=1.0e7 !E
       dat(3)=0.1 !gamma
-      dat(4)=90.0*pi/180.0
-      dat(5)=30000.0
+      dat(4)=135.0*pi/180.0
+      dat(5)=20000.0
+
+!      I am thinking of changing "theta" between [0,180] degree to model uncertainty in operating environment (like a see-saw/ride)
 
       !!! Max constraint values
       !Tensile
-      dat(6)=5000.0
-      dat(7)=20000.0
-      dat(8)=5000.0
+      dat(6)=5000.0    ! psi
+      dat(7)=20000.0   ! psi
+      dat(8)=5000.0    ! psi  
       !Compressive
-      dat(9)=5000.0
-      dat(10)=20000.0
-      dat(11)=5000.0
+      dat(9)=5000.0    ! psi
+      dat(10)=20000.0  ! psi
+      dat(11)=5000.0   ! psi
       !Displacement
-      dat(12)=0.005
-      dat(13)=0.005
+      dat(12)=0.005 ! in
+      dat(13)=0.005 ! in
 
 !!$      tensile_sigma1_max=dat(6)      
 !!$      tensile_sigma2_max=dat(7)
@@ -119,8 +111,6 @@
 !!$      max_u_disp=dat(12)
 !!$      max_v_disp=dat(13)
 !!$      
-
-
 
       do i=1,N
          X(i)   = 1.0     !500 mm
@@ -221,7 +211,7 @@
 9990  continue
       write(*,*) 'Error setting an option'
       goto 9000
-    end program example
+    end program Threebar
 !
 ! =============================================================================
 !
