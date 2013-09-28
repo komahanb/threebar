@@ -321,9 +321,9 @@ program Threebar
       pu=P*cos(theta)
       pv=P*sin(theta)
 
-      u=(L/E)*(x(1)*pu + 2*dsqrt(2.0)*x(2)*pu + x(3)*pu + x(3)*pv - x(1)*pv)/(x(1)*x(2) + dsqrt(2.0)*x(1)*x(3) + x(2)*x(3))
+      u=(L/E)*(x(1)*pu + 2*sqrt(2.0)*x(2)*pu + x(3)*pu + x(3)*pv - x(1)*pv)/(x(1)*x(2) + sqrt(2.0)*x(1)*x(3) + x(2)*x(3))
 
-      v=(L/E)*(-x(1)*pu + x(3)*pu + x(1)*pv + x(3)*pv)/(x(1)*x(2) + dsqrt(2.0)*x(1)*x(3) + x(2)*x(3))
+      v=(L/E)*(-x(1)*pu + x(3)*pu + x(1)*pv + x(3)*pv)/(x(1)*x(2) + sqrt(2.0)*x(1)*x(3) + x(2)*x(3))
 
 !!$if (loadcase.eq.2) then
 
@@ -574,6 +574,7 @@ program Threebar
 
 
 
+
          A(1)=cgrad(1,1)
          A(2)=cgrad(1,2)
          A(3)=cgrad(1,3)
@@ -657,7 +658,9 @@ program Threebar
 !!$!
 !!$!     calculate Hessian:
 !!$!
+!!$
 !!$         !Objective function
+!!$
 !!$         objhess(1)=0.0
 !!$         objhess(2)=0.0
 !!$         objhess(3)=1.0
